@@ -125,8 +125,10 @@ def open_email_form(ack, body, client):
     )
 
 @slack_app.view("email_submission")
-def handle_email_submission(ack, body, client):
+def handle_email_submission(ack, body, client, logger):
     ack()  # Acknowledge the submission
+    logger.info(f"🔍 View Submission Payload: {body}")
+
 
     user_id = body["user"]["id"]
     sender_info = client.users_info(user=user_id)
