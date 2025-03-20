@@ -1,51 +1,46 @@
+from flask import Flask, request, jsonify
+from slack_bolt import App
+from slack_bolt.adapter.flask import SlackRequestHandler
+from slack_bolt.adapter.socket_mode import SocketModeHandler
 import os
+from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
-from slack_bolt import App
-from slack_bolt.adapter.socket_mode import SocketModeHandler
-from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
 
-# Debug: Print environment variables
-print("SLACK_BOT_TOKEN:", os.getenv("SLACK_BOT_TOKEN"))
-print("SLACK_SIGNING_SECRET:", os.getenv("SLACK_SIGNING_SECRET"))
-print("EMAIL_SENDER:", os.getenv("EMAIL_SENDER"))
-print("EMAIL_PASSWORD:", os.getenv("EMAIL_PASSWORD"))
-
 # Slack credentials
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
 SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
-SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Add this to .env if missing
+SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
 
-# Ensure variables are not missing or empty
+# Ensure required environment variables are set
 if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET or not SLACK_APP_TOKEN:
     raise ValueError("Missing Slack credentials in .env file (or values are empty)")
 if not EMAIL_SENDER or not EMAIL_PASSWORD:
     raise ValueError("Missing email credentials in .env file (or values are empty)")
 
-# Initialize Slack app *AFTER* checking variables
+# Initialize Slack Bolt App
 slack_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
 
-# Email credentials
-EMAIL_SENDER = os.getenv("EMAIL_SENDER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-EMAIL_RECIPIENT = "support@r-consortium.org"
+# Flask for handling Slack events (needed for request verification)
+app = Flask(__name__)
+handler = SlackRequestHandler(slack_app)
 
-# Ensure tokens exist
-if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET or not SLACK_APP_TOKEN:
-    raise ValueError("Missing Slack credentials in .env file")
+@app.route("/slack/events", methods=["POST"])
+def slack_events():
+    data = request.get_json()
+    
+    # Respond to Slack’s URL verification challenge
+    if "challenge" in data:
+        return jsonify({"challenge": data["challenge"]})
 
-if not EMAIL_SENDER or not EMAIL_PASSWORD:
-    raise ValueError("Missing email credentials in .env file")
+    return handler.handle(request)
 
-# Initialize Slack app
-slack_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
-
-# Define the /email command
+# Slash Command /email
 @slack_app.command("/email")
 def open_email_form(ack, body, client):
     ack()  # Acknowledge the command
@@ -123,7 +118,12 @@ def handle_email_submission(ack, body, client):
     except Exception as e:
         client.chat_postMessage(channel=user_id, text=f"❌ Failed to send email: {str(e)}")
 
-
-# Start the Slack bot
+# **Start the bot correctly based on execution environment**
 if __name__ == "__main__":
-    SocketModeHandler(slack_app, SLACK_APP_TOKEN).start()
+    # Determine whether to use Flask (Heroku) or Socket Mode (local)
+    if os.getenv("HEROKU_APP_NAME"):
+        # Running on Heroku, use Flask
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    else:
+        # Running locally, use Socket Mode
+        SocketModeHandler(slack_app, SLACK_APP_TOKEN).start()
