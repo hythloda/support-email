@@ -1,0 +1,4 @@
+slack_bolt
+python-dotenv
+smtplib
+email
