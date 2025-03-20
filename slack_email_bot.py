@@ -81,8 +81,7 @@ def slack_events():
 
     return handler.handle(request)
 
-# Slash Command /email
-@slack_app.command("/email")
+@slack_app.command("/support")
 def open_email_form(ack, body, client):
     ack()  # Acknowledge the command
 
