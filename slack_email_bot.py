@@ -13,14 +13,22 @@ from email.mime.text import MIMEText
 
 
 # Load environment variables
-load_dotenv()
+#load_dotenv()
 
 # Slack credentials
-SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
-SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
-SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
-EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
+#SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
+#SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
+#SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
+#EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
+#EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
+
+SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
+SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET")
+EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
+
+if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
+    raise ValueError("Missing Slack credentials in environment variables")
 
 print("SLACK_BOT_TOKEN:", os.getenv("SLACK_BOT_TOKEN"))
 print("SLACK_SIGNING_SECRET:", os.getenv("SLACK_SIGNING_SECRET"))
