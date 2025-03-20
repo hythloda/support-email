@@ -33,8 +33,14 @@ handler = SlackRequestHandler(slack_app)
 
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
+    print("📩 Incoming Slack Request:")
+    print("Headers:", request.headers)
+    print("Content-Type:", request.content_type)
+    print("Payload:", request.data.decode("utf-8"))  # Decode to view raw JSON
+
     if request.content_type != "application/json":
         return jsonify({"error": "Invalid request type"}), 415  
+    
     data = request.get_json()
 
     if "challenge" in data:
