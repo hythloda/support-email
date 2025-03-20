@@ -33,12 +33,14 @@ handler = SlackRequestHandler(slack_app)
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
     data = request.get_json()
-    
-    # Respond to Slack’s URL verification challenge
-    if "challenge" in data:
-        return jsonify({"challenge": data["challenge"]})
 
+    # ✅ Respond to Slack’s challenge request
+    if "challenge" in data:
+        return jsonify({"challenge": data["challenge"]}), 200
+
+    # ✅ Pass all other events to Slack Bolt
     return handler.handle(request)
+
 
 # Slash Command /email
 @slack_app.command("/email")
