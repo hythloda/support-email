@@ -1,3 +1,2 @@
 slack_bolt
 python-dotenv
-email
