@@ -161,14 +161,14 @@ def handle_email_submission(ack, body, client, logger):
         msg = MIMEText(email_body)
         msg["Subject"] = subject
         msg["From"] = EMAIL_SENDER
-        msg["To"] = "support@riscv.org"
+        msg["To"] = "support@r-consortium.org"
 
         logger.info("📧 Attempting to send email...")
 
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                 server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                server.sendmail(EMAIL_SENDER, "support@riscv.org", msg.as_string())
+                server.sendmail(EMAIL_SENDER, "support@r-consortium.org", msg.as_string())
 
             logger.info("✅ Email sent successfully!")
             client.chat_postMessage(channel=user_id, text="✅ Your email has been sent successfully!")
