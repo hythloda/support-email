@@ -1,1 +1,1 @@
-worker: python slack_email_bot.py
+web: gunicorn slack_email_bot:app
