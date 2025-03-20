@@ -11,15 +11,30 @@ import smtplib
 from email.mime.text import MIMEText
 
 
+
 # Load environment variables
-load_dotenv()
+#load_dotenv()
 
 # Slack credentials
-SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
-SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
-SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
-EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
+#SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
+#SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
+#SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
+#EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
+#EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
+
+SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
+SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET")
+EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
+
+if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
+    raise ValueError("Missing Slack credentials in environment variables")
+
+print("SLACK_BOT_TOKEN:", os.getenv("SLACK_BOT_TOKEN"))
+print("SLACK_SIGNING_SECRET:", os.getenv("SLACK_SIGNING_SECRET"))
+
+if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
+    raise ValueError("Missing Slack credentials in environment variables")
 
 # Ensure required environment variables are set
 if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET or not SLACK_APP_TOKEN:
@@ -161,14 +176,14 @@ def handle_email_submission(ack, body, client, logger):
         msg = MIMEText(email_body)
         msg["Subject"] = subject
         msg["From"] = EMAIL_SENDER
-        msg["To"] = "support@r-consortium.org"
+        msg["To"] = "support@riscv.org"
 
         logger.info("📧 Attempting to send email...")
 
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                 server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                server.sendmail(EMAIL_SENDER, "support@r-consortium.org", msg.as_string())
+                server.sendmail(EMAIL_SENDER, "support@riscv.org", msg.as_string())
 
             logger.info("✅ Email sent successfully!")
             client.chat_postMessage(channel=user_id, text="✅ Your email has been sent successfully!")
@@ -183,11 +198,6 @@ def handle_email_submission(ack, body, client, logger):
 # **Start the bot correctly based on execution environment**
 if __name__ == "__main__":
     # Determine whether to use Flask (Heroku) or Socket Mode (local)
-    if os.getenv("HEROKU_APP_NAME"):
-        # Running on Heroku, use Flask
-        port = int(os.environ.get("PORT", 5000))  # Define port correctly
-        app.run(host="0.0.0.0", port=port)
-    else:
-        # Running locally, use Slack Socket Mode
-        SocketModeHandler(slack_app, SLACK_APP_TOKEN).start()
-
+    # Running on Heroku, use Flask
+    port = int(os.environ.get("PORT", 5000))  # Define port correctly
+    app.run(host="0.0.0.0", port=port)
