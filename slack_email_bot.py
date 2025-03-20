@@ -36,6 +36,14 @@ def slack_events():
     print("📩 Incoming Slack Request:")
     print("Headers:", request.headers)
     print("Content-Type:", request.content_type)
+    
+    slack_signature = request.headers.get("X-Slack-Signature", "MISSING")
+    slack_timestamp = request.headers.get("X-Slack-Request-Timestamp", "MISSING")
+
+    print(f"🔑 X-Slack-Signature: {slack_signature}")
+    print(f"⏳ X-Slack-Request-Timestamp: {slack_timestamp}")
+
+
     if request.content_type == "application/x-www-form-urlencoded":
         data = request.form.to_dict()
 
