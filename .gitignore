@@ -1,0 +1,32 @@
+# Virtual environment
+venv/
+.env
+path/
+
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Log files
+logs/
+*.log
+
+# System files 
+.DS_Store
+Thumbs.db
+
+# IDE/editor specific files
+.vscode/
+.idea/
+*.swp
+
+# Dependencies (if using pipenv or poetry)
+Pipfile
+Pipfile.lock
+poetry.lock
+
+# Deployment-related files
+*.zip
+*.tar.gz
