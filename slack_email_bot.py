@@ -82,83 +82,103 @@ def slack_events():
     return handler.handle(request)
 
 @slack_app.command("/support")
-def open_email_form(ack, body, client):
+def open_email_form(ack, body, client, logger):
     ack()  # Acknowledge the command
+    logger.info("📝 Received `/support` command. Attempting to open modal.")
 
     user_id = body["user_id"]
     sender_info = client.users_info(user=user_id)
     sender_name = sender_info["user"]["real_name"]
 
-    # Open a modal to collect the email and message
-    client.views_open(
-        trigger_id=body["trigger_id"],
-        view={
-            "type": "modal",
-            "callback_id": "email_submission",
-            "title": {"type": "plain_text", "text": "Send an Email"},
-            "submit": {"type": "plain_text", "text": "Send"},
-            "close": {"type": "plain_text", "text": "Cancel"},
-            "blocks": [
-                {
-                    "type": "input",
-                    "block_id": "email_block",
-                    "label": {"type": "plain_text", "text": "Enter your Email"},
-                    "element": {
-                        "type": "plain_text_input",
-                        "action_id": "email_input",
-                        "placeholder": {"type": "plain_text", "text": "you@example.com"},
+    logger.info(f"🔍 Fetching user info: {sender_name} ({user_id})")
+
+
+    try:
+        response = client.views_open(
+            trigger_id=body["trigger_id"],
+            view={
+                "type": "modal",
+                "callback_id": "email_submission",
+                "title": {"type": "plain_text", "text": "Send an Email"},
+                "submit": {"type": "plain_text", "text": "Send"},
+                "close": {"type": "plain_text", "text": "Cancel"},
+                "blocks": [
+                    {
+                        "type": "input",
+                        "block_id": "email_block",
+                        "label": {"type": "plain_text", "text": "Enter your Email"},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "email_input",
+                            "placeholder": {"type": "plain_text", "text": "you@example.com"},
+                        },
                     },
-                },
-                {
-                    "type": "input",
-                    "block_id": "message_block",
-                    "label": {"type": "plain_text", "text": "Enter Your Message"},
-                    "element": {
-                        "type": "plain_text_input",
-                        "action_id": "message_input",
-                        "multiline": True,
-                        "placeholder": {"type": "plain_text", "text": "Enter your message here"},
+                    {
+                        "type": "input",
+                        "block_id": "message_block",
+                        "label": {"type": "plain_text", "text": "Enter Your Message"},
+                        "element": {
+                            "type": "plain_text_input",
+                            "action_id": "message_input",
+                            "multiline": True,
+                            "placeholder": {"type": "plain_text", "text": "Enter your message here"},
+                        },
                     },
-                },
-            ],
-        },
-    )
+                ],
+            },
+        )
+        logger.info(f"✅ Modal opened successfully: {response}")
+    except Exception as e:
+        logger.error(f"❌ Failed to open modal: {e}")
+
 
 @slack_app.view("email_submission")
 def handle_email_submission(ack, body, client, logger):
     ack()  # Acknowledge the submission
-    logger.info(f"🔍 View Submission Payload: {body}")
-
 
     user_id = body["user"]["id"]
     sender_info = client.users_info(user=user_id)
     sender_name = sender_info["user"]["real_name"]
 
+    logger.info(f"📩 Processing email submission from: {sender_name} ({user_id})")
+
     # Extract email & message from the submitted form
-    email_input = body["view"]["state"]["values"]["email_block"]["email_input"]["value"]
-    message_text = body["view"]["state"]["values"]["message_block"]["message_input"]["value"]
-
-    if not email_input or "@" not in email_input:
-        client.chat_postMessage(channel=user_id, text="❌ Invalid email format. Please try again with `/email`.")
-        return
-
-    # Send email
-    subject = f"Support Request from {sender_name}"
-    email_body = f"Message from {sender_name} ({email_input}):\n\n{message_text}"
-
-    msg = MIMEText(email_body)
-    msg["Subject"] = subject
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = "support@riscv.org"
-
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_SENDER, "support@riscv.org", msg.as_string())
+        email_input = body["view"]["state"]["values"]["email_block"]["email_input"]["value"]
+        message_text = body["view"]["state"]["values"]["message_block"]["message_input"]["value"]
+        logger.info(f"📨 Extracted email: {email_input}")
+        logger.info(f"📝 Message: {message_text}")
 
-        client.chat_postMessage(channel=user_id, text="✅ Your email has been sent successfully!")
+        if not email_input or "@" not in email_input:
+            logger.warning("❌ Invalid email format submitted!")
+            client.chat_postMessage(channel=user_id, text="❌ Invalid email format. Please try again with `/support`.")
+            return
+
+        # Send email
+        subject = f"Support Request from {sender_name}"
+        email_body = f"Message from {sender_name} ({email_input}):\n\n{message_text}"
+
+        msg = MIMEText(email_body)
+        msg["Subject"] = subject
+        msg["From"] = EMAIL_SENDER
+        msg["To"] = "support@riscv.org"
+
+        logger.info("📧 Attempting to send email...")
+
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+                server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+                server.sendmail(EMAIL_SENDER, "support@riscv.org", msg.as_string())
+
+            logger.info("✅ Email sent successfully!")
+            client.chat_postMessage(channel=user_id, text="✅ Your email has been sent successfully!")
+        except Exception as e:
+            logger.error(f"❌ Failed to send email: {e}")
+            client.chat_postMessage(channel=user_id, text=f"❌ Failed to send email: {str(e)}")
+
     except Exception as e:
-        client.chat_postMessage(channel=user_id, text=f"❌ Failed to send email: {str(e)}")
+        logger.error(f"❌ Error processing email submission: {e}")
+        client.chat_postMessage(channel=user_id, text="❌ An error occurred. Please try again.")
 
 # **Start the bot correctly based on execution environment**
 if __name__ == "__main__":
