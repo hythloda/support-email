@@ -11,6 +11,7 @@ import smtplib
 from email.mime.text import MIMEText
 
 
+
 # Load environment variables
 load_dotenv()
 
