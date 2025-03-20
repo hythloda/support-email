@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import smtplib
 from email.mime.text import MIMEText
 
+
 # Load environment variables
 load_dotenv()
 
@@ -32,11 +33,15 @@ handler = SlackRequestHandler(slack_app)
 
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
+    # ✅ Ensure request is JSON
+    if request.content_type != "application/json":
+        return "Invalid request type", 415  # 🚨 Fix for "415 Unsupported Media Type"
+
     data = request.get_json()
 
-    # ✅ Respond to Slack’s challenge request correctly
+    # ✅ Respond to Slack's challenge request
     if "challenge" in data:
-        return jsonify({"challenge": data["challenge"]}), 200
+        return jsonify({"challenge": data["challenge"]})
 
     # ✅ Pass all other events to Slack Bolt
     return handler.handle(request)
