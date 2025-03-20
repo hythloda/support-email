@@ -36,12 +36,15 @@ def slack_events():
     print("📩 Incoming Slack Request:")
     print("Headers:", request.headers)
     print("Content-Type:", request.content_type)
-    print("Payload:", request.data.decode("utf-8"))  # Decode to view raw JSON
+    if request.content_type == "application/x-www-form-urlencoded":
+        data = request.form.to_dict()
 
-    if request.content_type != "application/json":
-        return jsonify({"error": "Invalid request type"}), 415  
-    
-    data = request.get_json()
+    elif request.content_type == "application/json":
+        data = request.get_json()
+    else:
+        return jsonify({"error": "Invalid request type"}), 415 
+ 
+    print("Payload:", request.data.decode("utf-8")) 
 
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]}), 200
