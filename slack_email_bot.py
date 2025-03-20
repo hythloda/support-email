@@ -22,6 +22,12 @@ SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socke
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
 
+print("SLACK_BOT_TOKEN:", os.getenv("SLACK_BOT_TOKEN"))
+print("SLACK_SIGNING_SECRET:", os.getenv("SLACK_SIGNING_SECRET"))
+
+if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
+    raise ValueError("Missing Slack credentials in environment variables")
+
 # Ensure required environment variables are set
 if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET or not SLACK_APP_TOKEN:
     raise ValueError("Missing Slack credentials in .env file (or values are empty)")
