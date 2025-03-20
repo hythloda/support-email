@@ -33,17 +33,13 @@ handler = SlackRequestHandler(slack_app)
 
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
-    # ✅ Ensure request is JSON
     if request.content_type != "application/json":
-        return "Invalid request type", 415  # 🚨 Fix for "415 Unsupported Media Type"
-
+        return jsonify({"error": "Invalid request type"}), 415  
     data = request.get_json()
 
-    # ✅ Respond to Slack's challenge request
     if "challenge" in data:
-        return jsonify({"challenge": data["challenge"]})
+        return jsonify({"challenge": data["challenge"]}), 200
 
-    # ✅ Pass all other events to Slack Bolt
     return handler.handle(request)
 
 # Slash Command /email
