@@ -34,13 +34,12 @@ handler = SlackRequestHandler(slack_app)
 def slack_events():
     data = request.get_json()
 
-    # ✅ Respond to Slack’s challenge request
+    # ✅ Respond to Slack’s challenge request correctly
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]}), 200
 
     # ✅ Pass all other events to Slack Bolt
     return handler.handle(request)
-
 
 # Slash Command /email
 @slack_app.command("/email")
@@ -125,7 +124,9 @@ if __name__ == "__main__":
     # Determine whether to use Flask (Heroku) or Socket Mode (local)
     if os.getenv("HEROKU_APP_NAME"):
         # Running on Heroku, use Flask
-        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+        port = int(os.environ.get("PORT", 5000))  # Define port correctly
+        app.run(host="0.0.0.0", port=port)
     else:
-        # Running locally, use Socket Mode
+        # Running locally, use Slack Socket Mode
         SocketModeHandler(slack_app, SLACK_APP_TOKEN).start()
+
