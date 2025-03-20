@@ -183,11 +183,6 @@ def handle_email_submission(ack, body, client, logger):
 # **Start the bot correctly based on execution environment**
 if __name__ == "__main__":
     # Determine whether to use Flask (Heroku) or Socket Mode (local)
-    if os.getenv("HEROKU_APP_NAME"):
-        # Running on Heroku, use Flask
-        port = int(os.environ.get("PORT", 5000))  # Define port correctly
-        app.run(host="0.0.0.0", port=port)
-    else:
-        # Running locally, use Slack Socket Mode
-        SocketModeHandler(slack_app, SLACK_APP_TOKEN).start()
-
+    # Running on Heroku, use Flask
+    port = int(os.environ.get("PORT", 5000))  # Define port correctly
+    app.run(host="0.0.0.0", port=port)
