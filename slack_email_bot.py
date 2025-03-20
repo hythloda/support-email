@@ -31,29 +31,48 @@ slack_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
 app = Flask(__name__)
 handler = SlackRequestHandler(slack_app)
 
+def verify_slack_request(req):
+    timestamp = req.headers.get("X-Slack-Request-Timestamp")
+    slack_signature = req.headers.get("X-Slack-Signature")
+
+    # If the request is too old, reject it (to prevent replay attacks)
+    if abs(time.time() - int(timestamp)) > 300:
+        return False
+
+    # Create the Slack signature base string
+    sig_basestring = f"v0:{timestamp}:{req.get_data(as_text=True)}"
+
+    # Compute the expected signature
+    my_signature = "v0=" + hmac.new(
+        SLACK_SIGNING_SECRET.encode(), sig_basestring.encode(), hashlib.sha256
+    ).hexdigest()
+
+    return hmac.compare_digest(my_signature, slack_signature)
+
+
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
     print("📩 Incoming Slack Request:")
     print("Headers:", request.headers)
-    print("Content-Type:", request.content_type)
-    
-    slack_signature = request.headers.get("X-Slack-Signature", "MISSING")
-    slack_timestamp = request.headers.get("X-Slack-Request-Timestamp", "MISSING")
 
-    print(f"🔑 X-Slack-Signature: {slack_signature}")
-    print(f"⏳ X-Slack-Request-Timestamp: {slack_timestamp}")
+    # ✅ Verify Slack request signature
+    if not verify_slack_request(request):
+        print("🚨 Slack request verification failed!")
+        return jsonify({"error": "Unauthorized"}), 401
 
-
+    # ✅ Handle Slack's "x-www-form-urlencoded" requests
     if request.content_type == "application/x-www-form-urlencoded":
         data = request.form.to_dict()
-
+    # ✅ Handle JSON requests
     elif request.content_type == "application/json":
         data = request.get_json()
     else:
-        return jsonify({"error": "Invalid request type"}), 415 
- 
-    print("Payload:", request.data.decode("utf-8")) 
+        return jsonify({"error": "Invalid request type"}), 415
 
+    print("✅ Request verified successfully!")
+    print("Payload:", data)
+
+    # ✅ Respond to Slack's challenge request
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]}), 200
 
