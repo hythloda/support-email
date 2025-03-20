@@ -1,3 +1,4 @@
 flask
 slack_bolt
 python-dotenv
+gunicorn
