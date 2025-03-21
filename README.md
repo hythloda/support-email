@@ -11,7 +11,7 @@ Many organizations want an easy way for team members to contact support directly
 Before you begin, you'll need:
 
 * A GitHub account
-* A Slack workspace where you are `onwer` and create a new app
+* A Slack workspace where you are `owner` and create a new app
 * A Heroku account (for free hosting)
 * A Gmail account with 2FA for an app password
 * Basic terminal or command line access (copy-paste is fine!)
@@ -29,7 +29,7 @@ cd slack-support-bot
 
 Replace `YOUR_USERNAME` with your actual GitHub username if it's a fork.
 
-I recommend opening up the entire director with your favorate editor such as VSCode
+I recommend opening up the entire directory with your favorite editor such as VSCode
 
 ### Step 2: Create a Slack App
 
@@ -63,7 +63,7 @@ I recommend opening up the entire director with your favorate editor such as VSC
 
 In a web browser of your choice you need an "App Passwords".
 
-Recommend googling this as Google changes the instructions often. Your account MUST have 2FA to have an app password
+Recommend Googling this as Google changes the instructions often. Your account MUST have 2FA to have an app password
 
 Once you have the Gmail app password, put in the local .env:
 * Your Gmail address (line 3 of .env)
@@ -71,9 +71,9 @@ Once you have the Gmail app password, put in the local .env:
 
 ### Step 4: Deploy to Heroku
 
-I like Heroku because it is free. Using this enables your Slack bot to be accessable all the time as it is running on Heroku. 
+I like Heroku because it is free. Using this enables your Slack bot to be accessible all the time as it is running on Heroku. 
 
-You need to make an account [here](https://www.heroku.com/). It also needs a payment method to validate your account, you will not use any fees. Account verification helps them prevent abuse. Having a credit card on file is the most reliable way of obtaining verified contact information but it is not used. 
+You need to make an account [here](https://www.heroku.com/). It also needs a payment method to validate your account, you will not be charged any fees. Account verification helps them prevent abuse. Having a credit card on file is the most reliable way of obtaining verified contact information but it is not used. 
 
 Then if you don’t have Heroku installed and if you are on a mac then go to the terminal where you have your code clone:
 
@@ -97,7 +97,7 @@ Notice the URL that it gives you it will be something like
 https://your-slack-support-bot-NUMBERS.herokuapp.com
 ```
 
-Set the environment variables on Heroku, this is copy-paste from your .env file with a little edits in the prefix and `--app`:
+Set the environment variables on Heroku, this is copy-paste from your .env file with some small edits in the prefix and `--app`:
 ```
 heroku config:set SLACK_BOT_TOKEN=xoxb-MOREDIGITS --app slack-support-bot
 heroku config:set SLACK_SIGNING_SECRET=LOTSOFCHARS --app slack-support-bot
@@ -111,7 +111,7 @@ heroku config:set SUPPORT_EMAIL="support@DOMAIN"  --app slack-support-bot
 Now you have the URL that Heroku uses for your app. This is something you need so you can sync your bot with your slack instance. 
 
 Go to your app’s Slash Command config in your browser.
-Set the Request URL to the URL given from the terminal but add `/slack/events` to the end. This is because the code is written to accept that
+Set the Request URL to the URL given from the terminal but add `/slack/events` to the end. This is because the code is written to expect that
 
 ```
 https://slack-support-bot-NUMBERS.herokuapp.com/slack/events
@@ -128,7 +128,7 @@ Go to "Interactivity & Shortcuts."
 
 Go to "Event Subscriptions." 
 
-* Enable event subscirptions
+* Enable event subscriptions
 * Enter the same URL
 * Save Changes
 
@@ -139,7 +139,7 @@ In your Slack workspace:
 * A form should open
 * Fill in your email and message
 * Submit — and it should send an email
-* Check intercom to see if it is there (takes a few min)
+* Check Intercom to see if it is there (takes a few minutes)
 
 
 ## Common Issues
@@ -152,6 +152,6 @@ In your Slack workspace:
     * Double-check your email and app password
 
 ##  Need Help?
-* Feel free to open an issue in the repo or reach out to the project maintainer. Everyone starts somewhere — we got you.
+* Feel free to open an issue in the repo or reach out to the project maintainer. Everyone starts somewhere — we've got you.
 * Reach out to me in slack
 
