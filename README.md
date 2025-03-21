@@ -2,13 +2,7 @@
 
 A simple Slack bot that allows users to send support requests via `/support`, which opens a form and sends the message to a support email.
 
-
-
-https://github.com/user-attachments/assets/d7480ba9-796f-480a-b584-df9b8ad7b943
-
-
-
-
+https://github.com/user-attachments/assets/7fd95e14-680a-4e68-abe2-cec427d72af3
 
 ## Why Use This?
 
