@@ -11,37 +11,24 @@ import smtplib
 from email.mime.text import MIMEText
 
 
-
+## This is the best way to do it but I didn't get to work with heroku and thus have the other method
 # Load environment variables
 #load_dotenv()
 
 # Slack credentials
 #SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN", "").strip()
 #SLACK_SIGNING_SECRET = os.getenv("SLACK_SIGNING_SECRET", "").strip()
-#SLACK_APP_TOKEN = os.getenv("SLACK_APP_TOKEN", "").strip()  # Required for Socket Mode
 #EMAIL_SENDER = os.getenv("EMAIL_SENDER", "").strip()
 #EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "").strip()
 
+## Not ideal but works with heroku
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET")
-SLACK_APP_TOKEN = os.environ.get("SLACK_APP_TOKEN")
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
 
 if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
     raise ValueError("Missing Slack credentials in environment variables")
-
-print("SLACK_BOT_TOKEN:", os.getenv("SLACK_BOT_TOKEN"))
-print("SLACK_SIGNING_SECRET:", os.getenv("SLACK_SIGNING_SECRET"))
-
-if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
-    raise ValueError("Missing Slack credentials in environment variables")
-
-# Ensure required environment variables are set
-if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET or not SLACK_APP_TOKEN:
-    raise ValueError("Missing Slack credentials in .env file (or values are empty)")
-if not EMAIL_SENDER or not EMAIL_PASSWORD:
-    raise ValueError("Missing email credentials in .env file (or values are empty)")
 
 # Initialize Slack Bolt App
 slack_app = App(token=SLACK_BOT_TOKEN, signing_secret=SLACK_SIGNING_SECRET)
@@ -71,27 +58,27 @@ def verify_slack_request(req):
 
 @app.route("/slack/events", methods=["POST"])
 def slack_events():
-    print("📩 Incoming Slack Request:")
+    print("Incoming Slack Request:")
     print("Headers:", request.headers)
 
-    # ✅ Verify Slack request signature
+    # Verify Slack request signature
     if not verify_slack_request(request):
-        print("🚨 Slack request verification failed!")
+        print("Slack request verification failed!")
         return jsonify({"error": "Unauthorized"}), 401
 
-    # ✅ Handle Slack's "x-www-form-urlencoded" requests
+    # Handle Slack's "x-www-form-urlencoded" requests
     if request.content_type == "application/x-www-form-urlencoded":
         data = request.form.to_dict()
-    # ✅ Handle JSON requests
+    # Handle JSON requests
     elif request.content_type == "application/json":
         data = request.get_json()
     else:
         return jsonify({"error": "Invalid request type"}), 415
 
-    print("✅ Request verified successfully!")
+    print("Request verified successfully!")
     print("Payload:", data)
 
-    # ✅ Respond to Slack's challenge request
+    # Respond to Slack's challenge request
     if "challenge" in data:
         return jsonify({"challenge": data["challenge"]}), 200
 
@@ -100,13 +87,13 @@ def slack_events():
 @slack_app.command("/support")
 def open_email_form(ack, body, client, logger):
     ack()  # Acknowledge the command
-    logger.info("📝 Received `/support` command. Attempting to open modal.")
+    logger.info("Received `/support` command. Attempting to open modal.")
 
     user_id = body["user_id"]
     sender_info = client.users_info(user=user_id)
     sender_name = sender_info["user"]["real_name"]
 
-    logger.info(f"🔍 Fetching user info: {sender_name} ({user_id})")
+    logger.info(f"Fetching user info: {sender_name} ({user_id})")
 
 
     try:
@@ -143,9 +130,9 @@ def open_email_form(ack, body, client, logger):
                 ],
             },
         )
-        logger.info(f"✅ Modal opened successfully: {response}")
+        logger.info(f"Modal opened successfully: {response}")
     except Exception as e:
-        logger.error(f"❌ Failed to open modal: {e}")
+        logger.error(f"Failed to open modal: {e}")
 
 
 @slack_app.view("email_submission")
@@ -156,49 +143,47 @@ def handle_email_submission(ack, body, client, logger):
     sender_info = client.users_info(user=user_id)
     sender_name = sender_info["user"]["real_name"]
 
-    logger.info(f"📩 Processing email submission from: {sender_name} ({user_id})")
+    logger.info(f"Processing email submission from: {sender_name} ({user_id})")
 
     # Extract email & message from the submitted form
     try:
         email_input = body["view"]["state"]["values"]["email_block"]["email_input"]["value"]
         message_text = body["view"]["state"]["values"]["message_block"]["message_input"]["value"]
-        logger.info(f"📨 Extracted email: {email_input}")
-        logger.info(f"📝 Message: {message_text}")
+        logger.info(f"Extracted email: {email_input}")
+        logger.info(f"Message: {message_text}")
 
         if not email_input or "@" not in email_input:
-            logger.warning("❌ Invalid email format submitted!")
-            client.chat_postMessage(channel=user_id, text="❌ Invalid email format. Please try again with `/support`.")
+            logger.warning("Invalid email format submitted!")
+            client.chat_postMessage(channel=user_id, text="Invalid email format. Please try again with `/support`.")
             return
 
         # Send email
         subject = f"Support Request from {sender_name}"
-        email_body = f"Message from {sender_name} ({email_input}):\n\n{message_text}"
+        email_body = f"Slack inbound request from {sender_name} ({email_input}):\n\n{message_text}"
 
         msg = MIMEText(email_body)
         msg["Subject"] = subject
         msg["From"] = EMAIL_SENDER
-        msg["To"] = "support@r-consortium.org"
+        msg["To"] = SUPPORT_EMAIL
 
-        logger.info("📧 Attempting to send email...")
+        logger.info("Attempting to send email...")
 
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
                 server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-                server.sendmail(EMAIL_SENDER, "support@r-consortium.org", msg.as_string())
+                server.sendmail(EMAIL_SENDER, SUPPORT_EMAIL, msg.as_string())
 
-            logger.info("✅ Email sent successfully!")
-            client.chat_postMessage(channel=user_id, text="✅ Your email has been sent successfully!")
+            logger.info("Email sent successfully!")
+            client.chat_postMessage(channel=user_id, text="Your email has been sent successfully!")
         except Exception as e:
-            logger.error(f"❌ Failed to send email: {e}")
-            client.chat_postMessage(channel=user_id, text=f"❌ Failed to send email: {str(e)}")
+            logger.error(f"Failed to send email: {e}")
+            client.chat_postMessage(channel=user_id, text=f"Failed to send email: {str(e)}")
 
     except Exception as e:
-        logger.error(f"❌ Error processing email submission: {e}")
-        client.chat_postMessage(channel=user_id, text="❌ An error occurred. Please try again.")
+        logger.error(f"Error processing email submission: {e}")
+        client.chat_postMessage(channel=user_id, text="error occurred. Please try again.")
 
-# **Start the bot correctly based on execution environment**
 if __name__ == "__main__":
-    # Determine whether to use Flask (Heroku) or Socket Mode (local)
     # Running on Heroku, use Flask
     port = int(os.environ.get("PORT", 5000))  # Define port correctly
     app.run(host="0.0.0.0", port=port)
