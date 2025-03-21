@@ -26,6 +26,8 @@ SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 SLACK_SIGNING_SECRET = os.environ.get("SLACK_SIGNING_SECRET")
 EMAIL_SENDER = os.environ.get("EMAIL_SENDER", "")
 EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "")
+SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "")
+
 
 if not SLACK_BOT_TOKEN or not SLACK_SIGNING_SECRET:
     raise ValueError("Missing Slack credentials in environment variables")
@@ -182,6 +184,84 @@ def handle_email_submission(ack, body, client, logger):
     except Exception as e:
         logger.error(f"Error processing email submission: {e}")
         client.chat_postMessage(channel=user_id, text="error occurred. Please try again.")
+
+@slack_app.shortcut("forward_to_intercom")
+def handle_forward_shortcut(ack, shortcut, client, logger):
+    ack()
+    user_id = shortcut["user"]["id"]
+    channel_id = shortcut["channel"]["id"]
+    message_ts = shortcut["message"]["ts"]
+    message_text = shortcut["message"]["text"]
+
+    # Determine where the message was posted (channel name or DM)
+    if channel_id.startswith("D"):
+        location = "a direct message"
+    else:
+        try:
+            channel_info = client.conversations_info(channel=channel_id)
+            channel_name = channel_info["channel"]["name"]
+            location = f"#{channel_name}"
+        except Exception as e:
+            logger.warning(f"Failed to get channel info: {e}")
+            location = f"<#{channel_id}>"
+
+    # Get original message sender's name
+    original_user = shortcut["message"].get("user")
+    if original_user:
+        sender_info = client.users_info(user=original_user)
+        sender_name = sender_info["user"]["real_name"]
+    else:
+        sender_name = "Unknown"
+
+    email_subject = f"Forwarded Slack Message from {sender_name}"
+    email_body = f"Forwarded by {sender_name} in {location}\n\n"
+    email_body += f"Slack message from {sender_name}:\n\n"
+    email_body += f"{message_text}\n\n"
+    email_body += f"Slack Message Link: https://slack.com/app_redirect?channel={channel_id}&message_ts={message_ts}"
+
+    # Send email
+    msg = MIMEText(email_body)
+    msg["Subject"] = email_subject
+    msg["From"] = EMAIL_SENDER
+    msg["To"] = SUPPORT_EMAIL
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_SENDER, SUPPORT_EMAIL, msg.as_string())
+
+        # Try replying in thread (if not DM)
+        try:
+            if channel_id.startswith("D"):
+                # DMs: no thread_ts support
+                client.chat_postMessage(
+                    channel=channel_id,
+                    text="Message forwarded to Intercom.",
+                )
+            else:
+                # Channel: post in thread
+                client.chat_postMessage(
+                    channel=channel_id,
+                    thread_ts=message_ts,
+                    text="Message forwarded to Intercom.",
+                )
+        except Exception as e:
+            logger.warning(f"Post in original location failed: {e}")
+            dm_channel = client.conversations_open(users=[user_id])["channel"]["id"]
+            client.chat_postMessage(
+                channel=dm_channel,
+                text="Message was forwarded to Intercom, but I couldn’t post in the original thread.",
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to send email or notify user: {e}")
+        dm_channel = client.conversations_open(users=[user_id])["channel"]["id"]
+        client.chat_postMessage(
+            channel=dm_channel,
+            text="Failed to forward message to Intercom. Please try again later.",
+        )
+
+
 
 if __name__ == "__main__":
     # Running on Heroku, use Flask
