@@ -58,11 +58,16 @@ I recommend opening up the entire directory with your favorite editor such as VS
 
 * Under "OAuth & Permissions", add these bot token scopes:
 
-    * commands
-    * users:read
-    * chat:write
-    * chat:write.public
-    * channels:read
+       app_mentions:read
+       channels:join
+       channels:read
+       chat:write
+       chat:write.public
+       commands
+       im:history
+       im:write
+       users:read
+  
     * Click Install App to Workspace and copy into your local .env:
         * Bot User OAuth Token (starts with xoxb- and is first line of .env
         * Signing Secret (found under Basic Information, second line of .env)
@@ -131,6 +136,8 @@ Save changes.
 Go to "Interactivity & Shortcuts." 
 * Enable Interactivity
 * Enter the same URL
+* Create a shortcut
+   * `forward_to_intercom`
 * Save Changes
 
 
