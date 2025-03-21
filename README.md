@@ -2,6 +2,14 @@
 
 A simple Slack bot that allows users to send support requests via `/support`, which opens a form and sends the message to a support email.
 
+
+
+https://github.com/user-attachments/assets/d7480ba9-796f-480a-b584-df9b8ad7b943
+
+
+
+
+
 ## Why Use This?
 
 Many organizations want an easy way for team members to contact support directly from Slack without searching for email addresses or external forms. This bot makes it super simple: type `/support`, fill out a quick form, and your message goes straight to a designated support inbox.
