@@ -14,7 +14,7 @@ Before you begin, you'll need:
 
 * A GitHub account
 * A Slack workspace where you are `owner` and create a new app
-* A Heroku account (for free hosting)
+* A Fly.io account (for free hosting)
 * A Gmail account with 2FA for an app password
 * Basic terminal or command line access (copy-paste is fine!)
 
@@ -76,54 +76,56 @@ Once you have the Gmail app password, put in the local .env:
 * Your Gmail address (line 3 of .env)
 * App password (used instead of your regular password line 4 of .env and put the letters and spaces inside the quotes)
 
-### Step 4: Deploy to Heroku
+### Step 4: Deploy to Fly.io	
 
-I like Heroku because it is free. Using this enables your Slack bot to be accessible all the time as it is running on Heroku. 
+I like Fly.io	 because it is free. Using this enables your Slack bot to be accessible all the time as it is running on Fly.io	. 
 
-You need to make an account [here](https://www.heroku.com/). It also needs a payment method to validate your account, you will not be charged any fees. Account verification helps them prevent abuse. Having a credit card on file is the most reliable way of obtaining verified contact information but it is not used. 
+You need to make an account [here]([Fly.io](https://fly.io/)). It requires a credit card to verifity your ID as well. 
 
-Then if you don’t have Heroku installed and if you are on a mac then go to the terminal where you have your code clone:
+Then if you don’t have Fly.io	 installed and if you are on a mac then go to the terminal where you have your code clone:
 
 ```
-brew tap heroku/brew && brew install heroku
-heroku login
+brew install flyctl
+flyctl auth login
+flyctl launch
 ```
 This prompts a window to log in. 
 
-
-Then you will push your app to Heroku
+Set the environment variables on Heroku, this is copy-paste from your .env file with some small edits in the prefix and `--app`:
 ```
-heroku create slack-support-bot
-git push heroku main
+flyctl secrets set SLACK_BOT_TOKEN=xoxb-MOREDIGITS 
+flyctl secrets set SLACK_SIGNING_SECRET=LOTSOFCHARS 
+flyctl secrets set EMAIL_SENDER=NAME@linuxfoundation.org 
+flyctl secrets set EMAIL_PASSWORD="16 letters with spaces"
+flyctl secrets set SUPPORT_EMAIL="support@DOMAIN"
+flyctl secrets set FLASK_APP=slack_email_bot.py
+```
+
+Then you will push your app to Fly.io
+```
+
 ```
 You can change the name of `slack-support-bot` to be anything. If you run more than one slack I recommend something like `project-slack-support-bot`
 
 Notice the URL that it gives you it will be something like
 
 ```
-https://your-slack-support-bot-NUMBERS.herokuapp.com
+https://support-email.fly.dev/slack/events
 ```
 
-Set the environment variables on Heroku, this is copy-paste from your .env file with some small edits in the prefix and `--app`:
-```
-heroku config:set SLACK_BOT_TOKEN=xoxb-MOREDIGITS --app slack-support-bot
-heroku config:set SLACK_SIGNING_SECRET=LOTSOFCHARS --app slack-support-bot
-heroku config:set EMAIL_SENDER=NAME@linuxfoundation.org  --app slack-support-bot
-heroku config:set EMAIL_PASSWORD="16 letters with spaces"  --app slack-support-bot
-heroku config:set SUPPORT_EMAIL="support@DOMAIN"  --app slack-support-bot
-```
 
-### Step 5: Add the Heroku URL to Your Slack App
 
-Now you have the URL that Heroku uses for your app. This is something you need so you can sync your bot with your slack instance. 
+### Step 5: Add the Fly.io URL to Your Slack App
+
+Now you have the URL that Fly.io uses for your app. This is something you need so you can sync your bot with your slack instance. 
 
 Go to your app’s Slash Command config in your browser.
 Set the Request URL to the URL given from the terminal but add `/slack/events` to the end. This is because the code is written to expect that
 
 ```
-https://slack-support-bot-NUMBERS.herokuapp.com/slack/events
+https://support-email.fly.dev/slack/events
 ```
-Replace slack-support-bot with the actual Heroku app name.
+Replace slack-support-bot with the actual Fly.io app name.
 
 Save changes.
 
@@ -150,15 +152,6 @@ In your Slack workspace:
 * Submit — and it should send an email
 * Check Intercom to see if it is there (takes a few minutes)
 
-
-## Common Issues
-
-* `dispatch_failed` in Slack: 
-    * This usually means the bot is crashing. 
-    * Run heroku logs --tail to check what's wrong
-    * `heroku logs --tail --app slack-support-bot`
-* No email sent
-    * Double-check your email and app password
 
 ##  Need Help?
 * Feel free to open an issue in the repo or reach out to the project maintainer. Everyone starts somewhere — we've got you.
